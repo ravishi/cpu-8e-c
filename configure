@@ -3924,7 +3924,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile cpu-8e/Makefile"
+ac_config_files="$ac_config_files Makefile cpu-8e/Makefile cpu-8e-disasm/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -4648,6 +4648,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "cpu-8e/Makefile") CONFIG_FILES="$CONFIG_FILES cpu-8e/Makefile" ;;
+    "cpu-8e-disasm/Makefile") CONFIG_FILES="$CONFIG_FILES cpu-8e-disasm/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
