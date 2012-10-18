@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
         /* imprimir o PC e o opcode */
         printf("%05lx %02x ", pc, op);
 
-        /* imprimir o valor binário da instrução */
+        /* imprimir (ou não) o parâmetro */
         if (IS_MULTIWORD(op)) {
             printf("%02x   ", param);
         } else {
