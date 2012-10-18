@@ -9,6 +9,7 @@
 
 #define OPCODE(x)           (x & 0xbf)
 #define ADDRESSING_MODE(x)  (x & 0x40)
+#define IS_MULTIWORD(x)     (x & 0x80)
 
 #define ADDR_IMMEDIATE  0
 #define ADDR_DIRECT     1
@@ -27,8 +28,7 @@
 int main(int argc, char *argv[])
 {
     FILE *input;
-    const char *s;
-    char params[256];
+    char *disasm, disasm_buf[256];
 
     if (argc < 2) {
         puts("Modo de usar: cpu-8e-disasm: [INPUT]");
@@ -43,39 +43,56 @@ int main(int argc, char *argv[])
 
     while (1) {
         long int pc = ftell(input);
-        int c = fgetc(input);
+        int op = fgetc(input);
+        int param;
 
-        if (c == EOF) {
+        if (op == EOF) {
             break;
         }
 
-        params[0] = '\0';
+        if (IS_MULTIWORD(op)) {
+            param = fgetc(input);
+            if (param == EOF) {
+                fprintf(stderr, "O arquivo terminou inesperadamente\n");
+                return EXIT_FAILURE;
+            }
+        }
 
-        switch (OPCODE(c)) {
+        switch (OPCODE(op)) {
             case HLT:
-                s = "HLT";
+                disasm = "HLT";
                 break;
             case NOP:
-                s = "NOP";
+                disasm = "NOP";
                 break;
             case RET:
-                s = "RET";
+                disasm = "RET";
                 break;
             case JMP: {
-                    int address = fgetc(input);
-                    s = "JMP";
-                    if (ADDRESSING_MODE(c) == ADDR_IMMEDIATE) {
-                        sprintf(params, "%02x", address);
+                    if (ADDRESSING_MODE(op) == ADDR_IMMEDIATE) {
+                        sprintf(disasm_buf, "JMP %02x", param);
                     } else {
-                        sprintf(params, "[%02x]", address);
+                        sprintf(disasm_buf, "JMP [%02x]", param);
                     }
+                    disasm = disasm_buf;
                     break;
                 }
             default:
-                s = "UNK";
+                disasm = "...";
                 break;
         }
 
-        printf("%02li %02x %s %s\n", pc, c, s, params);
+        /* imprimir o PC e o opcode */
+        printf("%05lx %02x ", pc, op);
+
+        /* imprimir o valor binário da instrução */
+        if (IS_MULTIWORD(op)) {
+            printf("%02x   ", param);
+        } else {
+            printf("     ", param);
+        }
+
+        /* imprimir o código desmontado */
+        puts(disasm);
     }
 }
