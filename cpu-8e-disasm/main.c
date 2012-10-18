@@ -27,7 +27,6 @@
 int main(int argc, char *argv[])
 {
     FILE *input;
-    int c, i;
     const char *s;
     char params[256];
 
@@ -42,8 +41,14 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    i = 0;
-    while (EOF != (c = fgetc(input))) {
+    while (1) {
+        long int pc = ftell(input);
+        int c = fgetc(input);
+
+        if (c == EOF) {
+            break;
+        }
+
         params[0] = '\0';
 
         switch (OPCODE(c)) {
@@ -71,7 +76,6 @@ int main(int argc, char *argv[])
                 break;
         }
 
-        printf("%02i %02x %s %s\n", i, c, s, params);
-        i += 1;
+        printf("%02li %02x %s %s\n", pc, c, s, params);
     }
 }
