@@ -84,8 +84,13 @@ const char *get_opcode_mnemonic(int opcode)
         OPM(XOR)
         OPM(ORL)
         default:
-            return "...";
+            return "\0";
     }
+}
+
+int is_opcode(int opcode)
+{
+    return *get_opcode_mnemonic(opcode) != '\0';
 }
 
 int main(int argc, char *argv[])
@@ -114,29 +119,32 @@ int main(int argc, char *argv[])
             break;
         }
 
-        disasm = get_opcode_mnemonic(op);
+        if (!is_opcode(op)) {
+            disasm = "XXX";
+        } else {
+            disasm = get_opcode_mnemonic(op);
+            if (IS_MULTIWORD(op)) {
+                param = fgetc(input);
+                if (param == EOF) {
+                    fprintf(stderr, "O arquivo terminou inesperadamente\n");
+                    return EXIT_FAILURE;
+                }
 
-        if (IS_MULTIWORD(op)) {
-            param = fgetc(input);
-            if (param == EOF) {
-                fprintf(stderr, "O arquivo terminou inesperadamente\n");
-                return EXIT_FAILURE;
+                if (ADDRESSING_MODE(op) == ADDRESSING_IMMEDIATE) {
+                    sprintf(disasm_buf, "%s %02x", disasm, param);
+                } else {
+                    sprintf(disasm_buf, "%s [%02x]", disasm, param);
+                }
+
+                disasm = disasm_buf;
             }
-
-            if (ADDRESSING_MODE(op) == ADDRESSING_IMMEDIATE) {
-                sprintf(disasm_buf, "%s %02x", disasm, param);
-            } else {
-                sprintf(disasm_buf, "%s [%02x]", disasm, param);
-            }
-
-            disasm = disasm_buf;
         }
 
         /* imprimir o PC e o opcode */
         printf("%05lx %02x ", pc, op);
 
         /* imprimir (ou não) o parâmetro */
-        if (IS_MULTIWORD(op)) {
+        if (is_opcode(op) && IS_MULTIWORD(op)) {
             printf("%02x   ", param);
         } else {
             printf("     ", param);
