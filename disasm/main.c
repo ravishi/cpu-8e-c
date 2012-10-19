@@ -1,18 +1,77 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/**
+ * Esta é a lista de opcodes, com o 7o bit zerado.
+ */
 #define HLT 0x0
 #define NOP 0x1
 #define NOT 0x2
 #define RET 0x3
-#define JMP 0x84    // 0xc4
+#define JMP 0x84
+#define JEQ 0x85
+#define JGT 0x86
+#define JGE 0x87
+#define JCY 0x88
+#define CAL 0x89
+#define SHL 0x8a
+#define SHR 0x8b
+#define SRA 0x8c
+#define ROL 0x8d
+#define ROR 0x8e
+#define STO 0x90
+#define LOD 0x91
+#define CMP 0x94
+#define ADD 0x95
+#define SUB 0x96
+#define AND 0x9a
+#define XOR 0x9b
+#define ORL 0x9c
 
-#define OPCODE(x)           (x & 0xbf)
-#define ADDRESSING_MODE(x)  (x & 0x40)
-#define IS_MULTIWORD(x)     (x & 0x80)
+#define OPCODE(b)           (b & 0xbf)
+#define ADDRESSING_MODE(b)  (b & 0x40)
+#define IS_MULTIWORD(b)     (b & 0x80)
 
 #define ADDR_IMMEDIATE  0
 #define ADDR_DIRECT     1
+
+
+/**
+ * Retorna uma string contendo o mnemônico do dado opcode.
+ */
+const char *get_opcode_mnemonic(int opcode)
+{
+#define OPM(m) \
+    case m:\
+        return #m ;
+    switch (OPCODE(opcode)) {
+        OPM(HLT)
+        OPM(NOP)
+        OPM(NOT)
+        OPM(RET)
+        OPM(JMP)
+        OPM(JEQ)
+        OPM(JGT)
+        OPM(JGE)
+        OPM(JCY)
+        OPM(CAL)
+        OPM(SHL)
+        OPM(SHR)
+        OPM(SRA)
+        OPM(ROL)
+        OPM(ROR)
+        OPM(STO)
+        OPM(LOD)
+        OPM(CMP)
+        OPM(ADD)
+        OPM(SUB)
+        OPM(AND)
+        OPM(XOR)
+        OPM(ORL)
+        default:
+            return "...";
+    }
+}
 
 
 /**
@@ -28,7 +87,8 @@
 int main(int argc, char *argv[])
 {
     FILE *input;
-    char *disasm, disasm_buf[256];
+    char disasm_buf[256];
+    const char *disasm;
 
     if (argc < 2) {
         puts("Modo de usar: cpu-8e-disasm: [INPUT]");
@@ -50,36 +110,22 @@ int main(int argc, char *argv[])
             break;
         }
 
+        disasm = get_opcode_mnemonic(op);
+
         if (IS_MULTIWORD(op)) {
             param = fgetc(input);
             if (param == EOF) {
                 fprintf(stderr, "O arquivo terminou inesperadamente\n");
                 return EXIT_FAILURE;
             }
-        }
 
-        switch (OPCODE(op)) {
-            case HLT:
-                disasm = "HLT";
-                break;
-            case NOP:
-                disasm = "NOP";
-                break;
-            case RET:
-                disasm = "RET";
-                break;
-            case JMP: {
-                    if (ADDRESSING_MODE(op) == ADDR_IMMEDIATE) {
-                        sprintf(disasm_buf, "JMP %02x", param);
-                    } else {
-                        sprintf(disasm_buf, "JMP [%02x]", param);
-                    }
-                    disasm = disasm_buf;
-                    break;
-                }
-            default:
-                disasm = "...";
-                break;
+            if (ADDRESSING_MODE(op) == ADDR_IMMEDIATE) {
+                sprintf(disasm_buf, "%s %02x", disasm, param);
+            } else {
+                sprintf(disasm_buf, "%s [%02x]", disasm, param);
+            }
+
+            disasm = disasm_buf;
         }
 
         /* imprimir o PC e o opcode */
