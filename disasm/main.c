@@ -2,7 +2,18 @@
 #include <stdlib.h>
 
 /**
- * Esta é a lista de opcodes, com o 7o bit zerado.
+ * Cada instrução pode ter um ou dois bytes, mas cada opcode tem apenas um
+ * byte. O byte restante conterá (ou não) o parâmetro da instrução.
+ *
+ * -  Os bits 0-4 identificam o opcode.
+ * -  O bit 5 não é utilizado.
+ * -  O bit 6 indica endereçamento imediato (0) ou direto (1).
+ * -  O bit 7 indica se a instrução possui uma ou duas palavras.
+ */
+
+/**
+ * Esta é a lista de opcodes. Os valores são os valores do opcode com o bit 6
+ * zerado.
  */
 #define HLT 0x0
 #define NOP 0x1
@@ -28,16 +39,20 @@
 #define XOR 0x9b
 #define ORL 0x9c
 
-#define OPCODE(b)           (b & 0xbf)
-#define ADDRESSING_MODE(b)  (b & 0x40)
-#define IS_MULTIWORD(b)     (b & 0x80)
+// identificaremos o opcode usando os bits 0-5 e 7.
+#define OPCODE(b)               (b & 0xbf)
 
-#define ADDR_IMMEDIATE  0
-#define ADDR_DIRECT     1
+// o bit 6 indica o modo de endereçamento
+#define ADDRESSING_MODE(b)      (b & 0x40)
+#define ADDRESSING_IMMEDIATE    0
+#define ADDREESSING_DIRECT      1
+
+// o bit 7 indica se a instrução possui duas palavras
+#define IS_MULTIWORD(b)         (b & 0x80)
 
 
 /**
- * Retorna uma string contendo o mnemônico do dado opcode.
+ * Retorna uma string contendo o mnemônico de um opcode.
  */
 const char *get_opcode_mnemonic(int opcode)
 {
@@ -72,17 +87,6 @@ const char *get_opcode_mnemonic(int opcode)
             return "...";
     }
 }
-
-
-/**
- * Cada instrução pode ter um ou dois bytes, mas cada opcode tem apenas um
- * byte. O byte restante conterá (ou não) o parâmetro da instrução.
- *
- * Os bits 0-4 identificam o opcode.
- * O bit 5 não é utilizado.
- * O bit 6 indica endereçamento imediato (0) ou direto (1).
- * O bit 7 indica se a instrução possui uma ou duas palavras.
- */
 
 int main(int argc, char *argv[])
 {
@@ -119,7 +123,7 @@ int main(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            if (ADDRESSING_MODE(op) == ADDR_IMMEDIATE) {
+            if (ADDRESSING_MODE(op) == ADDRESSING_IMMEDIATE) {
                 sprintf(disasm_buf, "%s %02x", disasm, param);
             } else {
                 sprintf(disasm_buf, "%s [%02x]", disasm, param);
