@@ -18,7 +18,7 @@ AC_CHECK_HEADERS([stdlib.h])
 AC_CONFIG_FILES([
     Makefile
     cpu-8e/Makefile
-    cpu-8e-disasm/Makefile
+    disasm/Makefile
 ])
 
 AC_OUTPUT
