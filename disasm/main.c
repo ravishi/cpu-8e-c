@@ -153,4 +153,6 @@ int main(int argc, char *argv[])
         /* imprimir o código desmontado */
         puts(disasm);
     }
+
+    return EXIT_SUCCESS;
 }
