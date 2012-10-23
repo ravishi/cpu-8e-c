@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     const char *disasm;
 
     if (argc < 2) {
-        puts("Modo de usar: cpu-8e-disasm: [INPUT]");
+        puts("Modo de usar: cpu-8e-disasm [INPUT]");
         return EXIT_SUCCESS;
     }
 
