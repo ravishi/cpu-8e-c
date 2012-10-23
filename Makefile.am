@@ -1,1 +1,1 @@
-SUBDIRS = . cpu-8e disasm
+SUBDIRS = . lib8e cpu-8e disasm
