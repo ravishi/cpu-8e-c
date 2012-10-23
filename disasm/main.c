@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
     input = fopen(argv[1], "rb");
     if (input == NULL) {
-        fprintf(stderr, "Falha ao carregar arquivo %s\n", argv[1]);
+        fprintf(stderr, "Falha ao carregar arquivo \"%s\"\n", argv[1]);
         return EXIT_FAILURE;
     }
 
