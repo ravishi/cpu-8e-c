@@ -96,7 +96,7 @@ cpu8e *cpu8e_new_with_init()
 #define CPU8E_ULA_SUB   2
 #define CPU8E_ULA_AND   3
 #define CPU8E_ULA_XOR   4
-#define CPU8E_ULA_OR    5
+#define CPU8E_ULA_ORL   5
 #define CPU8E_ULA_NOT   6
 #define CPU8E_ULA_SHL   7
 #define CPU8E_ULA_SHR   8
@@ -181,7 +181,7 @@ c8word cpu8e_ula(cpu8e *self, int op)
             // TODO não lembro como implementar isso.
             result = 0;
             break;
-        case CPU8E_ULA_OR:
+        case CPU8E_ULA_ORL:
             result = self->ra || self->rb;
             break;
         default:
@@ -330,6 +330,31 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             // soma os operandos e guarda o resultado em ACC.
             self->acc = cpu8e_ula(self, CPU8E_ULA_ADD);
+        case SUB:
+            // lê o segundo operando
+            self->mdr = cpu8e_memory_get(self, self->mar);
+            self->ra = self->acc;
+            self->rb = self->mdr;
+            // subtrai os operandos e guarda o resultado em ACC.
+            self->acc = cpu8e_ula(self, CPU8E_ULA_SUB);
+        case AND:
+            // lê o segundo operando
+            self->mdr = cpu8e_memory_get(self, self->mar);
+            self->ra = self->acc;
+            self->rb = self->mdr;
+            self->acc = cpu8e_ula(self, CPU8E_ULA_AND);
+        case XOR:
+            // lê o segundo operando
+            self->mdr = cpu8e_memory_get(self, self->mar);
+            self->ra = self->acc;
+            self->rb = self->mdr;
+            self->acc = cpu8e_ula(self, CPU8E_ULA_XOR);
+        case ORL:
+            // lê o segundo operando
+            self->mdr = cpu8e_memory_get(self, self->mar);
+            self->ra = self->acc;
+            self->rb = self->mdr;
+            self->acc = cpu8e_ula(self, CPU8E_ULA_ORL);
         default:
             // deixa a cpu num estado inválido, para que o programa
             // simplesmente dê pau
