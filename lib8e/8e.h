@@ -1,6 +1,8 @@
 #ifndef __8E_H__
 #define __8E_H__
 
+#include <stddef.h>
+
 /**
  * Cada instrução pode ter um ou dois bytes, mas cada opcode tem apenas um
  * byte. O byte restante conterá (ou não) o parâmetro da instrução.
@@ -55,5 +57,21 @@
 const char *get_opcode_mnemonic(int opcode);
 
 int is_opcode(int opcode);
+
+
+/*********
+ * CODIGO DA CPU
+ ******************/
+
+struct cpu8e_s {
+    void *memory;
+    size_t memory_size;
+};
+
+typedef struct cpu8e_s cpu8e;
+
+cpu8e *cpu8e_new_with_init();
+void cpu8e_destroy(cpu8e *cpu);
+int *cpu8e_continue(cpu8e *cpu);
 
 #endif // __8E_H__

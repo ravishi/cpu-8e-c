@@ -62,9 +62,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_cpu_8e_OBJECTS = main.$(OBJEXT)
+am_cpu_8e_OBJECTS = cpu_8e-main.$(OBJEXT)
 cpu_8e_OBJECTS = $(am_cpu_8e_OBJECTS)
-cpu_8e_LDADD = $(LDADD)
+cpu_8e_DEPENDENCIES = $(top_srcdir)/lib8e/lib8e.a
+cpu_8e_LINK = $(CCLD) $(cpu_8e_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
@@ -170,6 +172,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 cpu_8e_SOURCES = main.c
+cpu_8e_LDADD = $(top_srcdir)/lib8e/lib8e.a
+cpu_8e_CFLAGS = -I$(top_srcdir)/lib8e
 all: all-am
 
 .SUFFIXES:
@@ -246,7 +250,7 @@ clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 cpu-8e$(EXEEXT): $(cpu_8e_OBJECTS) $(cpu_8e_DEPENDENCIES) $(EXTRA_cpu_8e_DEPENDENCIES) 
 	@rm -f cpu-8e$(EXEEXT)
-	$(LINK) $(cpu_8e_OBJECTS) $(cpu_8e_LDADD) $(LIBS)
+	$(cpu_8e_LINK) $(cpu_8e_OBJECTS) $(cpu_8e_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -259,6 +263,12 @@ distclean-compile:
 
 .c.obj:
 	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+cpu_8e-main.o: main.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cpu_8e_CFLAGS) $(CFLAGS) -c -o cpu_8e-main.o `test -f 'main.c' || echo '$(srcdir)/'`main.c
+
+cpu_8e-main.obj: main.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cpu_8e_CFLAGS) $(CFLAGS) -c -o cpu_8e-main.obj `if test -f 'main.c'; then $(CYGPATH_W) 'main.c'; else $(CYGPATH_W) '$(srcdir)/main.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
