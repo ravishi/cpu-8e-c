@@ -314,6 +314,7 @@ void cpu8e_substep_10(cpu8e *self)
             self->ra = self->mdr;
             // carrega A em ACC via ULA
             self->acc = cpu8e_ula(self, CPU8E_ULA_LOD);
+            break;
         case CMP:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
@@ -323,6 +324,7 @@ void cpu8e_substep_10(cpu8e *self)
             // daqueles bits da ula (que agora eu n lembro qual é), que será
             // utilizado depois pelo CMP. genial!
             cpu8e_ula(self, CPU8E_ULA_SUB);
+            break;
         case ADD:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
@@ -330,6 +332,7 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             // soma os operandos e guarda o resultado em ACC.
             self->acc = cpu8e_ula(self, CPU8E_ULA_ADD);
+            break;
         case SUB:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
@@ -337,24 +340,28 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             // subtrai os operandos e guarda o resultado em ACC.
             self->acc = cpu8e_ula(self, CPU8E_ULA_SUB);
+            break;
         case AND:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_AND);
+            break;
         case XOR:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_XOR);
+            break;
         case ORL:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_ORL);
+            break;
         default:
             // deixa a cpu num estado inválido, para que o programa
             // simplesmente dê pau
