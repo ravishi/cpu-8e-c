@@ -4,6 +4,8 @@
 
 typedef struct {
     c8word pc;
+    c8word mar;
+    c8word mdr;
     c8word a;
     c8word b;
 } tracer_entry;
@@ -38,6 +40,8 @@ void trace(const cpu8e *cpu, void *data)
 
     te->pc = cpu->pc;
     te->a = cpu8e_memory_get(cpu, te->pc);
+    te->mar = cpu->mar;
+    te->mdr = cpu->mdr;
     if (IS_MULTIWORD(te->a)) {
         te->b = cpu8e_memory_get(cpu, te->pc + 1);
     }
@@ -68,6 +72,21 @@ int main(int argc, char *argv[])
 
     // preencher a memória da cpu com o conteúdo do arquivo
     fread(cpu->memory, cpu->memory_size, 1, input);
+
+    // imprimir a memória da CPU antes da execução
+    {
+        c8addr i;
+        c8word *c = (c8word *) cpu->memory;
+        for (i = 0; i < cpu->memory_size; ++i) {
+            if (i % 8 == 0) {
+                printf("%02x: ", i);
+            }
+            printf("%02x ", c[i]);
+            if ((i+1) % 8 == 0) {
+                printf("\n");
+            }
+        }
+    }
 
     // executar a CPU
     if (cpu8e_continue(cpu) != 0) {
@@ -110,7 +129,19 @@ int main(int argc, char *argv[])
             }
 
             /* imprimir o código desmontado */
-            puts(disasm);
+            printf(disasm);
+
+            // alinhar
+            {
+                int i;
+                for (i = 16 - strlen(disasm); i > 0; i--)
+                {
+                    printf(" ");
+                }
+            }
+
+            // valores dos registradores
+            printf("PC=%02x MAR=%02x MDR=%02x\n", t->pc, t->mar, t->mdr);
         }
     }
 
