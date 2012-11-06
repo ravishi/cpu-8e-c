@@ -78,7 +78,9 @@ struct cpu8e_s {
     c8word rb;
     c8word ri;
     c8word state;
-    c8word ula_state;
+    c8word ula_state_z;
+    c8word ula_state_n;
+    c8word ula_state_c;
 };
 
 typedef struct cpu8e_s cpu8e;
