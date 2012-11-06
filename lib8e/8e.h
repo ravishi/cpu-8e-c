@@ -63,7 +63,7 @@ int is_opcode(int opcode);
  * CODIGO DA CPU
  ******************/
 
-typedef char c8word;
+typedef unsigned char c8word;
 typedef size_t c8addr;
 
 struct cpu8e_s {
