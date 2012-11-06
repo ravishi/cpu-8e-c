@@ -71,6 +71,7 @@ void cpu8e_init(cpu8e *self)
     self->rb = 0;
     self->ri = 0;
     self->state = 0;
+    self->tracer.trace = NULL;
 }
 
 void cpu8e_destroy(cpu8e *self)
@@ -376,6 +377,24 @@ void cpu8e_substep_10(cpu8e *self)
     }
 }
 
+void cpu8e_tracer_set(cpu8e *self, void (*trace)(const cpu8e *, void *), void *data)
+{
+    self->tracer.trace = trace;
+    self->tracer.data = data;
+}
+
+void cpu8e_tracer_unset(cpu8e *self)
+{
+    self->tracer.trace = NULL;
+}
+
+void cpu8e_trace(cpu8e *self)
+{
+    if (self->tracer.trace != NULL) {
+        self->tracer.trace(self, self->tracer.data);
+    }
+}
+
 /**
  * Continua a execução da parada. Retorna 0 caso a execução seja concluída com
  * sucesso. Retorna algo diferente de zero caso dê pau. 1 significa que a CPU
@@ -389,6 +408,7 @@ int cpu8e_continue(cpu8e *self)
     {
         switch (self->state) {
             case CPU8E_ST_00:
+                cpu8e_trace(self);
                 cpu8e_substep_00(self);
                 break;
             case CPU8E_ST_01:

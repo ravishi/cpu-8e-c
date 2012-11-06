@@ -63,8 +63,18 @@ int is_opcode(int opcode);
  * CODIGO DA CPU
  ******************/
 
+#define CPU8E_MAX_TRACERS 16
+
 typedef unsigned char c8word;
 typedef size_t c8addr;
+
+typedef struct cpu8e_s cpu8e;
+typedef struct cpu8e_tracer_s cpu8e_tracer;
+
+struct cpu8e_tracer_s {
+    void *data;
+    void (*trace)(const cpu8e *, void *);
+};
 
 struct cpu8e_s {
     void *memory;
@@ -81,12 +91,15 @@ struct cpu8e_s {
     c8word ula_state_z;
     c8word ula_state_n;
     c8word ula_state_c;
+    cpu8e_tracer tracer;
 };
 
-typedef struct cpu8e_s cpu8e;
 
 cpu8e *cpu8e_new_with_init();
 void cpu8e_destroy(cpu8e *cpu);
 int cpu8e_continue(cpu8e *cpu);
+
+void cpu8e_tracer_set(cpu8e *self, void (*trace)(const cpu8e *, void *), void *data);
+void cpu8e_tracer_unset(cpu8e *self);
 
 #endif // __8E_H__
