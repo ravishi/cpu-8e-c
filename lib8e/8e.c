@@ -135,6 +135,18 @@ c8word cpu8e_get_register(const cpu8e *self, cpu8e_register reg)
     }
 }
 
+unsigned int _rotl(const unsigned int value, int shift) {
+    if ((shift &= sizeof(value)*8 - 1) == 0)
+        return value;
+    return (value << shift) | (value >> (sizeof(value)*8 - shift));
+}
+ 
+unsigned int _rotr(const unsigned int value, int shift) {
+    if ((shift &= sizeof(value)*8 - 1) == 0)
+        return value;
+    return (value >> shift) | (value << (sizeof(value)*8 - shift));
+}
+
 c8word cpu8e_ula(cpu8e *self, cpu8e_ula_operation operation)
 {
     unsigned long result;
@@ -151,16 +163,13 @@ c8word cpu8e_ula(cpu8e *self, cpu8e_ula_operation operation)
             result = self->ra >> self->rb;
             break;
         case CPU8E_ULA_SRA:
-            // TODO implementar essa operação. não lembro o que é isso.
-            result = 0;
+            result = (self->ra >> self->rb) | (self->ra & 0x80);
             break;
         case CPU8E_ULA_ROL:
-            // TODO implementar essa operação. não lembro o que é isso.
-            result = 0;
+            result = _rotl(self->ra, self->rb);
             break;
         case CPU8E_ULA_ROR:
-            // TODO implementar essa operação. não lembro o que é isso.
-            result = 0;
+            result = _rotr(self->ra, self->rb);
             break;
         case CPU8E_ULA_LOD:
             result = self->ra;
@@ -175,8 +184,7 @@ c8word cpu8e_ula(cpu8e *self, cpu8e_ula_operation operation)
             result = self->ra && self->rb;
             break;
         case CPU8E_ULA_XOR:
-            // TODO não lembro como implementar isso.
-            result = 0;
+            result = self->ra ^ self->rb;
             break;
         case CPU8E_ULA_ORL:
             result = self->ra || self->rb;
@@ -196,7 +204,6 @@ c8word cpu8e_ula(cpu8e *self, cpu8e_ula_operation operation)
     self->ula_state_n = result < 0;
 
     // C indica se ocorreu um *carry* do bit mais significativo.
-    // TODO implementar o C
     self->ula_state_c = (result >> 8) != 0;
 
     return (c8word)(result & 0xff);
