@@ -63,15 +63,28 @@ int is_opcode(int opcode);
  * CODIGO DA CPU
  ******************/
 
+typedef char c8word;
+typedef size_t c8addr;
+
 struct cpu8e_s {
     void *memory;
     size_t memory_size;
+    c8word mar;
+    c8word mdr;
+    c8word pc;
+    c8word sp;
+    c8word acc;
+    c8word ra;
+    c8word rb;
+    c8word ri;
+    c8word state;
+    c8word ula_state;
 };
 
 typedef struct cpu8e_s cpu8e;
 
 cpu8e *cpu8e_new_with_init();
 void cpu8e_destroy(cpu8e *cpu);
-int *cpu8e_continue(cpu8e *cpu);
+int cpu8e_continue(cpu8e *cpu);
 
 #endif // __8E_H__
