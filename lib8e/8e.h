@@ -23,10 +23,10 @@
 // O bit 6 indica o modo de endereçamento de uma instrução.
 #define ADDRESSING_DIRECT       1
 #define ADDRESSING_IMMEDIATE    0
-#define ADDRESSING_MODE(b)      (b & 0x40)
+#define ADDRESSING_MODE(b)      (b >> 6) & 0x1
 
 // O bit 7 indica se a instrução possui uma ou duas palavras
-#define IS_MULTIWORD(b)         (b & 0x80)
+#define IS_MULTIWORD(b)         (b >> 7) & 0x1
 
 // Esta é a lista dos identificadores dos opcodes, conforme a definição acima.
 #define HLT 0x0

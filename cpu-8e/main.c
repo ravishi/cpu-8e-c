@@ -8,6 +8,10 @@ typedef struct {
     c8word mdr;
     c8word a;
     c8word b;
+    c8word ri;
+    c8word ula_state_z;
+    c8word ula_state_n;
+    c8word ula_state_c;
 } tracer_entry;
 
 typedef struct {
@@ -42,6 +46,10 @@ void trace(const cpu8e *cpu, void *data)
     te->a = cpu8e_memory_get(cpu, te->pc);
     te->mar = cpu->mar;
     te->mdr = cpu->mdr;
+    te->ri = cpu->ri;
+    te->ula_state_z = cpu->ula_state_z;
+    te->ula_state_n = cpu->ula_state_n;
+    te->ula_state_c = cpu->ula_state_c;
     if (IS_MULTIWORD(te->a)) {
         te->b = cpu8e_memory_get(cpu, te->pc + 1);
     }
@@ -74,6 +82,7 @@ int main(int argc, char *argv[])
     fread(cpu->memory, cpu->memory_size, 1, input);
 
     // imprimir a memória da CPU antes da execução
+    puts("Memória:");
     {
         c8addr i;
         c8word *c = (c8word *) cpu->memory;
@@ -88,13 +97,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    // executar a CPU
-    if (cpu8e_continue(cpu) != 0) {
-        puts("Ocorreu um erro durante a execução");
-    } else {
-        puts("Arquivo executado. Em futuras versões do programa você poderá saber qual foi o resultado da execução. Por enquanto, contente-se em acreditar que a execução terminou.");
-    }
+    cpu8e_continue(cpu);
 
+    puts("");
+    puts("Trace:");
     // imprimir o trace
     {
         size_t i;
@@ -141,7 +147,9 @@ int main(int argc, char *argv[])
             }
 
             // valores dos registradores
-            printf("PC=%02x MAR=%02x MDR=%02x\n", t->pc, t->mar, t->mdr);
+            printf("PC=%02x MAR=%02x MDR=%02x RI=%02x Z=%x N=%x C=%x\n",
+                    t->pc, t->mar, t->mdr, t->ri, t->ula_state_z,
+                    t->ula_state_n, t->ula_state_c);
         }
     }
 
