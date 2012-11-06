@@ -1,15 +1,39 @@
 #include <stdlib.h>
 #include "8e.h"
 
-/**
- * Retorna uma string contendo o mnemônico de um opcode.
- */
-const char *get_opcode_mnemonic(int opcode)
+#define CPU8E_ST_00         0x0
+#define CPU8E_ST_01         0x1
+#define CPU8E_ST_10         0x2
+#define CPU8E_ST_HLT        0x4
+#define CPU8E_ST_INVALID    0x5
+
+typedef enum
+{
+    CPU8E_ULA_ADD,
+    CPU8E_ULA_SUB,
+    CPU8E_ULA_AND,
+    CPU8E_ULA_XOR,
+    CPU8E_ULA_ORL,
+    CPU8E_ULA_NOT,
+    CPU8E_ULA_SHL,
+    CPU8E_ULA_SHR,
+    CPU8E_ULA_SRA,
+    CPU8E_ULA_ROL,
+    CPU8E_ULA_ROR,
+    CPU8E_ULA_LOD
+} cpu8e_ula_operation;
+
+int cpu8e_is_opcode(c8word byte)
+{
+    return *cpu8e_get_opcode_mnemonic(byte) != '\0';
+}
+
+const char *cpu8e_get_opcode_mnemonic(c8word byte)
 {
 #define OPM(m) \
-    case m:\
+    case CPU8E_##m:\
         return #m ;
-    switch (OPCODE(opcode)) {
+    switch (CPU8E_OPCODE(byte)) {
         OPM(HLT)
         OPM(NOP)
         OPM(NOT)
@@ -38,21 +62,6 @@ const char *get_opcode_mnemonic(int opcode)
     }
 }
 
-/**
- * Retorna algum valor diferente de 0 se o valor passado puder ser identificado
- * como um opcode válido, ou 0 caso contrário.
- */
-int is_opcode(int opcode)
-{
-    return *get_opcode_mnemonic(opcode) != '\0';
-}
-
-
-
-/**********************
- * O código da CPU
- ************************************/
-
 cpu8e *cpu8e_new()
 {
     return (cpu8e *) malloc(sizeof(cpu8e));
@@ -74,12 +83,6 @@ void cpu8e_init(cpu8e *self)
     self->tracer.trace = NULL;
 }
 
-void cpu8e_destroy(cpu8e *self)
-{
-    free(self->memory);
-    free(self);
-}
-
 cpu8e *cpu8e_new_with_init()
 {
     cpu8e *self = cpu8e_new();
@@ -87,63 +90,56 @@ cpu8e *cpu8e_new_with_init()
     return self;
 }
 
-#define CPU8E_ST_00     0x0
-#define CPU8E_ST_01     0x1
-#define CPU8E_ST_10     0x2
-#define CPU8E_ST_HLT    0x4
-#define CPU8E_ST_INVALID 0x5
-
-#define CPU8E_ULA_ADD   1
-#define CPU8E_ULA_SUB   2
-#define CPU8E_ULA_AND   3
-#define CPU8E_ULA_XOR   4
-#define CPU8E_ULA_ORL   5
-#define CPU8E_ULA_NOT   6
-#define CPU8E_ULA_SHL   7
-#define CPU8E_ULA_SHR   8
-#define CPU8E_ULA_SRA   9
-#define CPU8E_ULA_ROL   10
-#define CPU8E_ULA_ROR   11
-#define CPU8E_ULA_LOD   12
+void cpu8e_destroy(cpu8e *self)
+{
+    free(self->memory);
+    free(self);
+}
 
 c8word cpu8e_memory_get(cpu8e *self, c8addr address)
 {
     return ((c8word *) self->memory)[address];
 }
+
 void cpu8e_memory_set(cpu8e *self, c8addr address, c8word value)
 {
     c8word *memory = (c8word *) self->memory;
     memory[address] = value;
 }
 
-void cpu8e_substep_00(cpu8e *self)
+c8word cpu8e_get_register(const cpu8e *self, cpu8e_register reg)
 {
-    // primeira fase: obtenção do opcode
-    self->mar = self->pc;
-    self->mdr = cpu8e_memory_get(self, self->mar);
-    self->pc += 1;
-    self->ri = self->mdr;
-
-    // o próximo estado dependerá de se o opcode possui operando ou não.
-    self->state = IS_MULTIWORD(self->ri) ? CPU8E_ST_01 : CPU8E_ST_10;
-}
-
-void cpu8e_substep_01(cpu8e *self)
-{
-    self->mar = self->pc;
-    self->pc += 1;
-    // se o endereçamento for direto, carrega o endereço do operando
-    if (ADDRESSING_MODE(self->ri) == ADDRESSING_DIRECT) {
-        self->mdr = cpu8e_memory_get(self, self->mar);
-        self->mar = self->mdr;
+    switch (reg) {
+        case CPU8E_ACC:
+            return self->acc;
+        case CPU8E_MAR:
+            return self->mar;
+        case CPU8E_MDR:
+            return self->mdr;
+        case CPU8E_PC:
+            return self->pc;
+        case CPU8E_SP:
+            return self->sp;
+        case CPU8E_RA:
+            return self->ra;
+        case CPU8E_RB:
+            return self->rb;
+        case CPU8E_RI:
+            return self->ri;
+        case CPU8E_Z:
+            return self->ula_state_z;
+        case CPU8E_N:
+            return self->ula_state_n;
+        case CPU8E_C:
+            return self->ula_state_c;
     }
-    self->state = CPU8E_ST_10;
 }
 
-c8word cpu8e_ula(cpu8e *self, int op)
+c8word cpu8e_ula(cpu8e *self, cpu8e_ula_operation operation)
 {
-    c8word result;
-    switch (op)
+    unsigned long result;
+
+    switch (operation)
     {
         case CPU8E_ULA_NOT:
             result = !self->ra;
@@ -201,56 +197,80 @@ c8word cpu8e_ula(cpu8e *self, int op)
 
     // C indica se ocorreu um *carry* do bit mais significativo.
     // TODO implementar o C
-    self->ula_state_c = 0;
+    self->ula_state_c = (result >> 8) != 0;
 
-    return result;
+    return (c8word)(result & 0xff);
+}
+
+void cpu8e_substep_00(cpu8e *self)
+{
+    // primeira fase: obtenção do opcode
+    self->mar = self->pc;
+    self->mdr = cpu8e_memory_get(self, self->mar);
+    self->pc += 1;
+    self->ri = self->mdr;
+
+    // o próximo estado dependerá de se o opcode possui operando ou não.
+    self->state = CPU8E_IS_MULTIWORD(self->ri) ? CPU8E_ST_01 : CPU8E_ST_10;
+}
+
+void cpu8e_substep_01(cpu8e *self)
+{
+    self->mar = self->pc;
+    self->pc += 1;
+    // se o endereçamento for direto, carrega o endereço do operando
+    if (CPU8E_ADDRESSING_MODE(self->ri) == CPU8E_ADDRESSING_DIRECT) {
+        self->mdr = cpu8e_memory_get(self, self->mar);
+        self->mar = self->mdr;
+    }
+    self->state = CPU8E_ST_10;
 }
 
 void cpu8e_substep_10(cpu8e *self)
 {
     // execução do opcode. aqui é que a mágina acontece :-)
     
-    switch (OPCODE(self->ri))
+    switch (CPU8E_OPCODE(self->ri))
     {
-        case HLT:
+        case CPU8E_HLT:
             self->state = CPU8E_ST_HLT;
             break;
-        case NOP:
+        case CPU8E_NOP:
             break;
-        case NOT:
+        case CPU8E_NOT:
             self->ra = self->acc;
             self->acc = cpu8e_ula(self, CPU8E_ULA_NOT);
             break;
-        case RET:
+        case CPU8E_RET:
             self->sp += 1; // incrementa o stackpointer
             self->mar = self->sp; // endereça o último elemento da pilha
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->pc = self->mdr;
             break;
-        case JMP:
+        case CPU8E_JMP:
             self->pc = self->mar; // jump incondicional
             break;
-        case JEQ:
+        case CPU8E_JEQ:
             if (self->ula_state_z) {
                 self->pc = self->mar;
             }
             break;
-        case JGT:
+        case CPU8E_JGT:
             if (!self->ula_state_n && !self->ula_state_z) {
                 self->pc = self->mar;
             }
             break;
-        case JGE:
+        case CPU8E_JGE:
             if (!self->ula_state_n) {
                 self->pc = self->mar;
             }
             break;
-        case JCY:
+        case CPU8E_JCY:
             if (self->ula_state_c) {
                 self->pc = self->mar;
             }
             break;
-        case CAL:
+        case CPU8E_CAL:
             // end. de retorno
             self->mdr = self->pc;
             // end. da rotina chamada
@@ -264,7 +284,7 @@ void cpu8e_substep_10(cpu8e *self)
             // recupera o endereço de retorno (jump)
             self->pc = self->mdr;
             break;
-        case SHL:
+        case CPU8E_SHL:
             // lê contagem para o shift;
             self->mdr = cpu8e_memory_get(self, self->mar);
 
@@ -272,7 +292,7 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_SHL);
             break;
-        case SHR:
+        case CPU8E_SHR:
             // lê a contagem para o shift;
             self->mdr = cpu8e_memory_get(self, self->mar);
 
@@ -280,7 +300,7 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_SHR);
             break;
-        case SRA:
+        case CPU8E_SRA:
             // lê a contagem para o shift;
             self->mdr = cpu8e_memory_get(self, self->mar);
 
@@ -288,7 +308,7 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_SRA);
             break;
-        case ROL:
+        case CPU8E_ROL:
             // lê a contagem para o rotate;
             self->mdr = cpu8e_memory_get(self, self->mar);
 
@@ -296,7 +316,7 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_ROL);
             break;
-        case ROR:
+        case CPU8E_ROR:
             // lê a contagem para o rotate;
             self->mdr = cpu8e_memory_get(self, self->mar);
 
@@ -304,19 +324,19 @@ void cpu8e_substep_10(cpu8e *self)
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_ROR);
             break;
-        case STO:
+        case CPU8E_STO:
             // o operando é o acc
             self->mdr = self->acc;
             cpu8e_memory_set(self, self->mar, self->mdr);
             break;
-        case LOD:
+        case CPU8E_LOD:
             // lê o operando
             self->mdr = self->mar;
             self->ra = self->mdr;
             // carrega A em ACC via ULA
             self->acc = cpu8e_ula(self, CPU8E_ULA_LOD);
             break;
-        case CMP:
+        case CPU8E_CMP:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
@@ -326,7 +346,7 @@ void cpu8e_substep_10(cpu8e *self)
             // utilizado depois pelo CMP. genial!
             cpu8e_ula(self, CPU8E_ULA_SUB);
             break;
-        case ADD:
+        case CPU8E_ADD:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
@@ -334,7 +354,7 @@ void cpu8e_substep_10(cpu8e *self)
             // soma os operandos e guarda o resultado em ACC.
             self->acc = cpu8e_ula(self, CPU8E_ULA_ADD);
             break;
-        case SUB:
+        case CPU8E_SUB:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
@@ -342,21 +362,21 @@ void cpu8e_substep_10(cpu8e *self)
             // subtrai os operandos e guarda o resultado em ACC.
             self->acc = cpu8e_ula(self, CPU8E_ULA_SUB);
             break;
-        case AND:
+        case CPU8E_AND:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_AND);
             break;
-        case XOR:
+        case CPU8E_XOR:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
             self->rb = self->mdr;
             self->acc = cpu8e_ula(self, CPU8E_ULA_XOR);
             break;
-        case ORL:
+        case CPU8E_ORL:
             // lê o segundo operando
             self->mdr = cpu8e_memory_get(self, self->mar);
             self->ra = self->acc;
@@ -395,12 +415,6 @@ void cpu8e_trace(cpu8e *self)
     }
 }
 
-/**
- * Continua a execução da parada. Retorna 0 caso a execução seja concluída com
- * sucesso. Retorna algo diferente de zero caso dê pau. 1 significa que a CPU
- * alcançou um estado inesperado. Outros códigos de erro serão definidos
- * posteriormente.
- */
 int cpu8e_continue(cpu8e *self)
 {
     // a cpu continua em execução enquanto o estado não for HLT
@@ -421,6 +435,5 @@ int cpu8e_continue(cpu8e *self)
                 return 1;
         }
     }
-
     return 0;
 }

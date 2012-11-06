@@ -28,18 +28,18 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if (!is_opcode(op)) {
+        if (!cpu8e_is_opcode(op)) {
             disasm = "XXX";
         } else {
-            disasm = get_opcode_mnemonic(op);
-            if (IS_MULTIWORD(op)) {
+            disasm = cpu8e_get_opcode_mnemonic(op);
+            if (CPU8E_IS_MULTIWORD(op)) {
                 param = fgetc(input);
                 if (param == EOF) {
                     fprintf(stderr, "O arquivo terminou inesperadamente\n");
                     return EXIT_FAILURE;
                 }
 
-                if (ADDRESSING_MODE(op) == ADDRESSING_IMMEDIATE) {
+                if (CPU8E_ADDRESSING_MODE(op) == CPU8E_ADDRESSING_IMMEDIATE) {
                     sprintf(disasm_buf, "%s %02x", disasm, param);
                 } else {
                     sprintf(disasm_buf, "%s [%02x]", disasm, param);
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         printf("%05lx %02x ", pc, op);
 
         /* imprimir (ou não) o parâmetro */
-        if (is_opcode(op) && IS_MULTIWORD(op)) {
+        if (cpu8e_is_opcode(op) && CPU8E_IS_MULTIWORD(op)) {
             printf("%02x   ", param);
         } else {
             printf("     ", param);

@@ -9,9 +9,9 @@ typedef struct {
     c8word a;
     c8word b;
     c8word ri;
-    c8word ula_state_z;
-    c8word ula_state_n;
-    c8word ula_state_c;
+    c8word z;
+    c8word n;
+    c8word c;
 } tracer_entry;
 
 typedef struct {
@@ -42,17 +42,18 @@ void trace(const cpu8e *cpu, void *data)
     te = t->trace + t->idx;
     t->idx += 1;
 
-    te->pc = cpu->pc;
+    te->pc = cpu8e_get_register(cpu, CPU8E_PC);
     te->a = cpu8e_memory_get(cpu, te->pc);
-    te->mar = cpu->mar;
-    te->mdr = cpu->mdr;
-    te->ri = cpu->ri;
-    te->ula_state_z = cpu->ula_state_z;
-    te->ula_state_n = cpu->ula_state_n;
-    te->ula_state_c = cpu->ula_state_c;
-    if (IS_MULTIWORD(te->a)) {
+    if (CPU8E_IS_MULTIWORD(te->a)) {
         te->b = cpu8e_memory_get(cpu, te->pc + 1);
     }
+
+    te->mar = cpu8e_get_register(cpu, CPU8E_MAR);
+    te->mdr = cpu8e_get_register(cpu, CPU8E_MDR);
+    te->ri = cpu8e_get_register(cpu, CPU8E_RI);
+    te->z = cpu8e_get_register(cpu, CPU8E_Z);
+    te->n = cpu8e_get_register(cpu, CPU8E_N);
+    te->c = cpu8e_get_register(cpu, CPU8E_C);
 }
 
 
@@ -110,12 +111,12 @@ int main(int argc, char *argv[])
         for (i = 0; i < tracer->idx; i++)
         {
             tracer_entry *t = tracer->trace + i;
-            if (!is_opcode(t->a)) {
+            if (!cpu8e_is_opcode(t->a)) {
                 disasm = "XXX";
             } else {
-                disasm = get_opcode_mnemonic(t->a);
-                if (IS_MULTIWORD(t->a)) {
-                    if (ADDRESSING_MODE(t->a) == ADDRESSING_IMMEDIATE) {
+                disasm = cpu8e_get_opcode_mnemonic(t->a);
+                if (CPU8E_IS_MULTIWORD(t->a)) {
+                    if (CPU8E_ADDRESSING_MODE(t->a) == CPU8E_ADDRESSING_IMMEDIATE) {
                         sprintf(disasm_buf, "%s %02x", disasm, t->b);
                     } else {
                         sprintf(disasm_buf, "%s [%02x]", disasm, t->b);
@@ -128,7 +129,7 @@ int main(int argc, char *argv[])
             printf("%05lx %02x ", t->pc, t->a);
 
             /* imprimir (ou não) o parâmetro */
-            if (is_opcode(t->a) && IS_MULTIWORD(t->a)) {
+            if (cpu8e_is_opcode(t->a) && CPU8E_IS_MULTIWORD(t->a)) {
                 printf("%02x   ", t->b);
             } else {
                 printf("     ");
@@ -148,8 +149,7 @@ int main(int argc, char *argv[])
 
             // valores dos registradores
             printf("PC=%02x MAR=%02x MDR=%02x RI=%02x Z=%x N=%x C=%x\n",
-                    t->pc, t->mar, t->mdr, t->ri, t->ula_state_z,
-                    t->ula_state_n, t->ula_state_c);
+                    t->pc, t->mar, t->mdr, t->ri, t->z, t->n, t->c);
         }
     }
 
